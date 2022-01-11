@@ -1,0 +1,67 @@
+---
+title: "Notebook Selection"
+author: "Rubens Alasmar"
+date: "09/01/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Notebook dimension sheet
+
+I have created a sheet that contains some notebook info that could somehow help me and my frieds choose the best option to each one's choices. It depended on some metrics intesions on each (very simplified) computer related proprieties like:
+ 1. Hard drive capacity: that's the most straight forward;
+ 2. Fast for everyday tasks: more weighted towards processing power;
+ 3. Good for gaming: this also includes processing power but weights more on video processing capacity.
+ 
+To create those scores, I had to make some simplifications to calculate the overall performance of the computer. These assumptions are listed as follows:
+
+  1. Memroy RAM speed affects something around 5% and 10% on overall computer performance if it doesn't have dedicated videocard (uses only integrated). 
+  2. Memory size doesn't increase performance linearly over each GB added. To consider that, I've used a function that does make the criteria around 8GB of ram as standard (on that time) and gave exponential penalty to each GB less then 8 GB and root sqared advantage on each GB added over 8GB. So that way it wasn't linear as expected on one of [Linus Tech Tips videos](https://www.youtube.com/watch?v=kUFWalEf31w&ab_channel=LinusTechTips). has explaining it.
+
+#1.1 - Writing on the sheet 
+  
+First, I have gathered some data from every notebook to compose the score, which were:
+- Store: Store source link to the notebook deal;
+- Notebook: Notebook name and model;
+- Processor: Processor model name and other info
+- Processor Score: Proecssor benchmark score searched on [PassMark](https://www.cpubenchmark.net/cpu_list.php)
+- Processor Cores: Number of cores from processor
+- RAM Memory (GB): RAM Memory size 
+- Memory Speed (Mhz): RAM memory speed
+- Expandible RAM?: Does the notebook have an expansion slot for RAM?
+- GPU Type: One of GPU types between `Dedicated` and `Integrated`
+- GPU Card: Model name of the GPU card
+- GPU Score: GPU benchmark score searched on [PassMark](https://www.cpubenchmark.net/gpu_list.php)
+- Storage capacity (GB)
+- Storage type
+- Expandible Storage?
+- Screen size (In)
+- Resolution (px)
+- Price (BRL)
+- Cash price
+- Obs
+
+This sheet used some statistical principles that are quite simple.
+
+Down below I describe each method used to create a unique score between all of the notebook inside the sheet:
+
+
+
+1. Scale by max - min: Mostly used to find where 
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
