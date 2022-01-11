@@ -1,8 +1,8 @@
 ---
-title: "Some Data Science Demonstrations Rubens"
+title: "Demand estimation and forecasting using time series"
 author: 
   - Name: Rubens Elias Francischetti Alasmar 
-subtitle: "Examples of Advanced Analytics with demand estimation and clustering analysis with notebook propreties"
+subtitle: "A case involving cashier demand estimation solved by using Advanced Analytics"
 output: 
   html_notebook: 
     toc: yes
