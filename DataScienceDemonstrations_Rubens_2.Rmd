@@ -14,7 +14,7 @@ rm(list = ls())
 ```
 # 1 - Notebook dimension sheet
 
-I have created [a sheet](https://docs.google.com/spreadsheets/d/1aB1nHR6KjOuhOQVfblfaYEyRGSTvCevVG3bL0o7iU84/edit?usp=sharing) that contains some notebook info that could somehow help me and my frieds choose the best option to each one's choices. It depended on some metrics intesions on each (very simplified) computer related proprieties like:
+I have created [a sheet](https://docs.google.com/spreadsheets/d/1aB1nHR6KjOuhOQVfblfaYEyRGSTvCevVG3bL0o7iU84/edit?usp=sharing) that contains some notebook info that could somehow help me and my friends choose the best option to each one's choices. It depended on some metrics intentions on each (very simplified) computer related proprieties like:
  1. Hard drive capacity: that's the most straight forward;
  2. Fast for everyday tasks: more weighted towards processing power;
  3. Good for gaming: this also includes processing power but weights more on video processing capacity.
@@ -31,7 +31,7 @@ First, I have gathered some data from every notebook to compose the score, which
   - Store: Store source link to the notebook deal;
   - Notebook: Notebook name and model;
   - Processor: Processor model name and other info;
-  - Processor Score: Proecssor benchmark score searched on [PassMark](https://www.cpubenchmark.net/cpu_list.php);
+  - CPU Score: Proecssor benchmark score searched on [PassMark](https://www.cpubenchmark.net/cpu_list.php);
   - Processor Cores: Number of cores from processor;
   - RAM Memory (GB): RAM Memory size ;
   - Memory Speed (Mhz): RAM memory speed;
@@ -54,7 +54,7 @@ After that I've made the scores given the info. These used some statistical prin
 To make calculations simpler, I have renamed them from 1 to 6, on which the became:
 
   - var_1: Flag which indicates 1 if the notebook has an SSD, otherwise 0
-  - var_2: Processor score
+  - var_2: CPU Score
   - var_3: Storage capacity
   - var_4: GPU Score
   - var_5: RAM Speed
@@ -318,19 +318,19 @@ names(df_notebooks) = df_notebooks[3,] %>% unlist() %>% str_remove_all("(/)|(\\(
 
 df_notebooks2 = df_notebooks %>%
   filter(row_number()>3) %>% 
-  select(Notebook,Processor,Processor_Score    
+  select(Notebook,Processor,CPU_Score    
 ,Processor_Cores,RAM_Memory_GB,Memory_SpeedMhz    
 ,Expandible_RAM,GPU_Type,GPU_Card           
 ,GPU_Score,Storage_capacity_GB,Storage_type       
 ,Expandible_Storage,Screen_size_In,Resolution_px      
 ,Price_BRL,Obs) %>%
   mutate(Price_BRL = str_remove_all(Price_BRL,"(R\\$ )|(\\,)") %>% as.numeric()
-         ,Processor_Score = as.numeric(Processor_Score)
+         ,CPU_Score = as.numeric(CPU_Score)
          ,Memory_SpeedMhz = as.numeric(Memory_SpeedMhz)
          ,RAM_Memory_GB = as.numeric(RAM_Memory_GB)
          ,Memory_SpeedMhz = as.numeric(Memory_SpeedMhz)
          ,GPU_Score = as.numeric(GPU_Score)
-         ,Processor_Score = as.numeric(Processor_Score)
+         ,CPU_Score = as.numeric(CPU_Score)
          ,Screen_size_In = as.numeric(Screen_size_In)
          ,Storage_capacity_GB = as.numeric(Storage_capacity_GB)) %>% 
   mutate_if(function(x) {is.character(x) && (!(x %in% c("Notebook","Processor")))},as.factor) %>%
@@ -338,7 +338,7 @@ df_notebooks2 = df_notebooks %>%
 
 ```
 
-# 2.2 - Multidimensional Analysis
+## 2.2 - Multidimensional Analysis
 
 Calculating the factors we can check which variables most characterize the notebooks:
 
@@ -346,11 +346,11 @@ We assume standardize all variables included are essential to give them the same
 ```{r message=FALSE, warning=FALSE}
 #First we need to cast boolean and flags into numerical:
 matrix_notebooks = df_notebooks2 %>% 
-  select(Processor_Score,RAM_Memory_GB,Memory_SpeedMhz
+  select(CPU_Score,RAM_Memory_GB,Memory_SpeedMhz
          ,GPU_Type,GPU_Score,Resolution_px,Processor_Cores,Storage_capacity_GB
          ,Storage_type,Screen_size_In,Price_BRL) %>% 
 # We remove GPU_Type due it's dependency on gpu score
-  model.matrix(~Processor_Score
+  model.matrix(~CPU_Score
              # +Processor_Cores
              +RAM_Memory_GB
              +Memory_SpeedMhz
@@ -408,18 +408,44 @@ plotly::plot_ly(data=data_plot_princomp,
 ```
 We Could change weights that gives those variables a lesser importance on overall variance.
 
+We can use those 3 fist components to plot all notebooks on a 3d space for clustering down below:
+
+```{r echo=FALSE}
+#now we use princomp to plot into a 3 dimensional space using the 3 most important components.
+
+cluster_build = princomp_analysis$x[,1:3] %>% as_tibble() %>% 
+  bind_cols(df_notebooks2 %>% select(Notebook,Price_BRL))
+
+plotly::plot_ly(data = cluster_build,
+        x = ~PC1, y = ~PC2, z = ~PC3,
+        text = ~ Notebook,
+        type = 'scatter3d', mode ='markers',
+        color = cluster_build$Price_BRL)
+
+```
+in this plot, the more yellow the more expensive.
+
 ## 2.3 - Cluster Analysis
 We can also cluster them to see which groups exists and what are their characteristics:
 
 First we cluster them into 4 different groups, using Kmeans, so we can analyze some data:
 
-```{r echo=FALSE,fig.width=6,fig.height=12,fig.align='center'}
+```{r echo=FALSE,warning=FALSE,fig.width=9,fig.height=10,fig.align='center'}
+set.seed(1337)
+
 kmeans_notebook = kmeans(matrix_notebooks,centers = 4)  
+
+#re ordering notebooks by average price inside each cluster:
 
 df_notebooks3 = df_notebooks2 %>% 
   mutate(clusters = kmeans_notebook$cluster %>% as.factor()) %>% 
-  select(Processor_Score,RAM_Memory_GB,GPU_Score,Price_BRL,Storage_capacity_GB,clusters) %>% 
-  pivot_longer(c("Processor_Score","RAM_Memory_GB","GPU_Score","Price_BRL","Storage_capacity_GB")) %>% 
+  select(CPU_Score,RAM_Memory_GB,GPU_Score,Price_BRL,Storage_capacity_GB,Screen_size_In,clusters) %>% 
+  pivot_longer(c("CPU_Score","RAM_Memory_GB","GPU_Score"
+                 ,"Price_BRL","Storage_capacity_GB"
+                 ,"Screen_size_In")) %>% 
+  mutate(name = factor(name,c("Price_BRL","CPU_Score","RAM_Memory_GB","GPU_Score"
+                 ,"Storage_capacity_GB"
+                 ,"Screen_size_In"))) %>% 
   group_by(clusters,name) %>% 
   mutate(  min=min(value)
           ,q3 = quantile(value,0.75)
@@ -428,8 +454,16 @@ df_notebooks3 = df_notebooks2 %>%
           ,max=max(value),.groups="drop") %>% 
   ungroup()
 
+new_cluster_tags = df_notebooks3 %>% 
+  filter(name=="Price_BRL") %>% 
+  group_by(clusters) %>% 
+  summarise(avg_price = mean(value),.groups="drop") %>% 
+  arrange(avg_price) %>% 
+  mutate(factor_cluster = row_number() %>% as.factor())
+
 plott = df_notebooks3 %>% 
-  ggplot(aes(x=clusters,y=value,fill=clusters,groups=clusters))+
+  left_join(new_cluster_tags %>% select(-avg_price),by=c("clusters"="clusters")) %>%  
+  ggplot(aes(x=factor_cluster,y=value,fill=factor_cluster,groups=factor_cluster))+
   geom_violin(aes(text=paste("max:",max
                              ,"\nq3",q3
                              ,"\nmedian",median
@@ -441,10 +475,10 @@ ggplotly(plott,tooltip = c("text"))
 ```
 Analyzing some notebook proprieties, we can name clusters as:
 
- 1. Lesser Notebooks: Those has profiles on which even with low price, they give the least performance overall.
+ 1. Not-books (Bad deals): These notebooks has low cost but also don't have some good stats. the `CPU_Score` has probably one outliar from a mis-clustered notebook. Also they are the only group which has screen sizes smaller than 15.6 inches. 
  2. Medium-specs Notebooks: they have a medium budget, and a wide variety of specs. Those specs probably doesn't occur with the same notebook and they must be good on one thing and worst in all others.
- 2. Budget Notebooks: these give good performance for it's price. If the customer doesn't mind giving up up to date hardware and best components, this is the best cluster in this dataset.
- 3. Fancy Notebooks: If you don't mind spending money on them, at least you'll have best performance in the set.
+ 3. Budget Notebooks: these give good performance for it's price. If the customer doesn't mind giving up having the newest hardware, this is their best choice, beides storage capacity, which must have high correlation with them having an SSD instead of regular SATA.
+ 4. Fancy Notebooks: If you don't mind spending money on them, at least you'll have best performance in the set.
 
 # 3 - Conclusion
 
